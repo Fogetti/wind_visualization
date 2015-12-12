@@ -1,2 +1,4 @@
 data/*
 dest/data/map_topo.json
+grib2
+wgrib2
