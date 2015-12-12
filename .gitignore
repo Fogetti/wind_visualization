@@ -1,4 +1,5 @@
 data/*
 dest/data/map_topo.json
+dest/data/wind.ieee
 grib2
 wgrib2
