@@ -4,55 +4,46 @@
     <meta charset="utf-8">
     <title>Wind Visualization</title>
     <link href="/stylesheets/reset.css" media="all" rel="stylesheet" type="text/css" />
-    <style>
-.sea {
-  fill: #002255;
-}
-.graticule {
-  fill: none;
-  stroke: #777;
-}
-.country_0 { fill: #396c67; }
-.country_1 { fill: #518f78; }
-.country_2 { fill: #65b598; }
-.country_3 { fill: #254750; }
-.country_4 { fill: #81dcb9; }
-.coastline {
-  fill: none;
-  stroke: #eee;
-  stroke-width: 1px;
-}
-    </style>
+    <link href="/stylesheets/application.css" media="all" rel="stylesheet" type="text/css" />
   </head>
   <body>
     <script src="http://d3js.org/d3.v3.min.js"></script>
     <script src="http://d3js.org/topojson.v1.min.js"></script>
+    <script src="/javascripts/particle.js"></script>
+    <script src="/javascripts/app.js"></script>
     <script>
 var width  = window.innerWidth;
 var height = window.innerHeight;
 
+// 粒子描画用canvas準備
+var canvas = d3.select("body").append("canvas")  
+             .attr("width", width)
+             .attr("height", height);
+
+// 座標変換関数
 var projection = d3.geo.orthographic()
                  .scale(width * 2.0)
                  .translate([width / 2, height / 2])
                  .clipAngle(90)
                  .rotate([225, -38]);
-var path = d3.geo.path().projection(projection);
 
-var svg = d3.select("body").append("svg")
-          .attr("width", width)
-          .attr("height", height);
-
-// 海
-svg.append("rect").attr({"width": "100%", "height": "100%", "class": "sea"});
-
-// 緯度経度線  
-var graticule = d3.geo.graticule().step([5, 5]);
-svg.append("path")
-   .datum(graticule)
-   .attr("class", "graticule")
-   .attr("d", path);
- 
+// 地図データ処理:
 d3.json("/data/map_topo.json", function(error, dat) {
+  var path = d3.geo.path().projection(projection);
+  var svg  = d3.select("body").append("svg")
+             .attr("width", width)
+             .attr("height", height);
+
+  // 海
+  svg.append("rect").attr({"width": "100%", "height": "100%", "class": "sea"});
+  
+  // 緯度経度線  
+  var graticule = d3.geo.graticule().step([5, 5]);
+  svg.append("path")
+     .datum(graticule)
+     .attr("class", "graticule")
+     .attr("d", path);
+
   // 国毎に色を塗る
   var shape = svg.append("g");
   shape.selectAll(".countries")
@@ -67,6 +58,23 @@ d3.json("/data/map_topo.json", function(error, dat) {
      .attr("d", path)
      .attr("class", "coastline");
 });
+
+//風データ処理
+var xhr = new XMLHttpRequest();
+xhr.open('GET', '/data/wind.ieee', true);
+xhr.responseType = 'arraybuffer';
+xhr.onload = function(e) {
+  var buffer   = this.response;
+  var wind     = new Float32Array(buffer.byteLength / 4);
+  var dataview = new DataView(buffer);
+  for (var i = 0; i < wind.length; i++) {
+    wind[i] = dataview.getFloat32(i * 4);
+  }
+
+  // 描画開始
+  App.run(canvas, wind, projection);
+};
+xhr.send();
     </script>
   </body>
 </html>
