@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Wind Visualization</title>
+    <link href="/stylesheets/reset.css" media="all" rel="stylesheet" type="text/css" />
+    <style>
+.sea {
+  fill: #002255;
+}
+.graticule {
+  fill: none;
+  stroke: #777;
+}
+.country_0 { fill: #396c67; }
+.country_1 { fill: #518f78; }
+.country_2 { fill: #65b598; }
+.country_3 { fill: #254750; }
+.country_4 { fill: #81dcb9; }
+.coastline {
+  fill: none;
+  stroke: #eee;
+  stroke-width: 1px;
+}
+    </style>
+  </head>
+  <body>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="http://d3js.org/topojson.v1.min.js"></script>
+    <script>
+var width  = window.innerWidth;
+var height = window.innerHeight;
+
+var projection = d3.geo.orthographic()
+                 .scale(width * 2.0)
+                 .translate([width / 2, height / 2])
+                 .clipAngle(90)
+                 .rotate([225, -38]);
+var path = d3.geo.path().projection(projection);
+
+var svg = d3.select("body").append("svg")
+          .attr("width", width)
+          .attr("height", height);
+
+// 海
+svg.append("rect").attr({"width": "100%", "height": "100%", "class": "sea"});
+
+// 緯度経度線  
+var graticule = d3.geo.graticule().step([5, 5]);
+svg.append("path")
+   .datum(graticule)
+   .attr("class", "graticule")
+   .attr("d", path);
+ 
+d3.json("/data/map_topo.json", function(error, dat) {
+  // 国毎に色を塗る
+  var shape = svg.append("g");
+  shape.selectAll(".countries")
+       .data(topojson.feature(dat, dat.objects.map_geo).features)
+       .enter()
+       .append("path").attr("d", path)
+       .attr("class", function(d, i) { return "country_" + (i % 5); });
+
+  //海岸線
+  svg.append("path")
+     .datum(topojson.mesh(dat, dat.objects.map_geo, function(a, b) { return a === b; }))
+     .attr("d", path)
+     .attr("class", "coastline");
+});
+    </script>
+  </body>
+</html>
